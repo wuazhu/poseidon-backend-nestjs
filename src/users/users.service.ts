@@ -1,9 +1,13 @@
 import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { DatabaseService } from 'src/database/database.service';
+import { Prisma } from '@prisma/client';
+
 
 @Injectable()
 export class UsersService {
+  constructor(private databaseService: DatabaseService) {}
   private users = [
     {
       id: 1,
@@ -30,48 +34,78 @@ export class UsersService {
       email: 'aa@qq.com'
     }
   ]
-  create(createUserDto: CreateUserDto) {
-    createUserDto.id = this.users[this.users.length-1].id + 1
-    return this.users.push(createUserDto)
+  async create(createUserDto: Prisma.UserCreateInput) {
+    return this.databaseService.user.create({
+      data: createUserDto
+    })
   }
 
-  findAll(keywords?: string) {
+  async findAll(keywords?: string, pageNum: number=1, pageSize: number=10) {
+    const _page = pageNum-1
     if (keywords) {
       const _keywords = keywords.toLowerCase().trim()
-      return this.users.filter(item => item.username.toLowerCase().includes(_keywords))
+      return this.databaseService.user.findMany({
+        where: {
+          username: {
+            contains: _keywords,
+            mode: 'insensitive',
+            not: '', 
+          }
+        },
+        skip: _page,
+        take: pageSize
+      })
+    } else {
+      return this.databaseService.user.findMany({
+        skip: _page,
+        take: pageSize
+      })
     }
-    return this.users
   }
 
-  findOne(id: number) {
-    const user = this.users.filter(item => item.id === id)
-    if (!user.length) {
+  async findOne(id: number) {
+    const user = await this.databaseService.user.findUnique({
+      where: {
+        id
+      }
+    })
+    if (!user) {
       throw new NotFoundException('id错误')
     }
     return user
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    const _arr = []
-    this.users = this.users.map(item => {
-      if (item.id===id) {
-        const _item = {
-          ...item,
-          ...updateUserDto
-        }
-        _arr.push(_item)
-        return _item
-      } else {
-        return item
-      }
-    })
-    if (!_arr.length) {
-      throw new NotFoundException('id错误')
+  async update(id: number, updateUserDto: Prisma.UserUpdateInput) {
+    try {
+      const res = await this.databaseService.user.update({
+        where: {
+          id
+        },
+        data: updateUserDto
+      })
+      console.log("🚀 ~ UsersService ~ update ~ res:", res)
+    } catch (error) {
+      throw new Error(error.message)
     }
-    return _arr
+    // const _arr = []
+    // this.users = this.users.map(item => {
+    //   if (item.id===id) {
+    //     const _item = {
+    //       ...item,
+    //       ...updateUserDto
+    //     }
+    //     _arr.push(_item)
+    //     return _item
+    //   } else {
+    //     return item
+    //   }
+    // })
+    // if (!_arr.length) {
+    // }
+    // return _arr
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     return `This action removes a #${id} user`;
   }
 }

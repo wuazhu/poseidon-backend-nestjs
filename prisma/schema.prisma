@@ -25,13 +25,13 @@ datasource db {
 model User {
   id              Int       @id @default(autoincrement())
   username        String
-  email           String    @unique
-  role            Role
-  gender          Gender    
+  email           String    
+  role            Role      @default(CUEST)
+  gender          Gender    @default(MALE)
   password        String
-  deptId          Int       
-  dept            Dept      @relation(fields: [deptId], references: [id])
-  mobile          String    
+  deptId          Int?       
+  dept            Dept?     @relation(fields: [deptId], references: [id])
+  mobile          String?    
   avatar          String    @default("http://images-wuazhu.test.upcdn.net/wuazhu/avatar_1726040826.svg")
   createTime      DateTime  @default(now())
   isDeleted       Boolean   @default(false)

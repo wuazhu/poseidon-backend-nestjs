@@ -2,19 +2,23 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Valida
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
+import { Prisma } from '@prisma/client';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body(ValidationPipe) createUserDto: CreateUserDto) {
+  create(@Body(ValidationPipe) createUserDto: Prisma.UserCreateInput) {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
-  findAll(@Query('keywords') keywords: string) {
-    return this.usersService.findAll(keywords);
+  findAll(
+    @Query('keywords') keywords?: string,
+    @Query('pageNum') pageNum?: string,
+    @Query('pageSize') pageSize?: string
+  ) {
+    return this.usersService.findAll(keywords, pageNum?+pageNum:1, pageSize?+pageSize:10)
   }
 
   @Get(':id')
@@ -23,7 +27,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body(ValidationPipe) updateUserDto: UpdateUserDto) {
+  update(@Param('id', ParseIntPipe) id: number, @Body(ValidationPipe) updateUserDto: Prisma.UserUpdateInput) {
     return this.usersService.update(id, updateUserDto);
   }
 
