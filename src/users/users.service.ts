@@ -1,8 +1,6 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
-import { Prisma } from '@prisma/client';
+import { Prisma,  } from '@prisma/client';
 
 
 @Injectable()
@@ -35,7 +33,7 @@ export class UsersService {
     }
   ]
   async create(createUserDto: Prisma.UserCreateInput) {
-    return this.databaseService.user.create({
+    return await this.databaseService.user.create({
       data: createUserDto
     })
   }
@@ -52,31 +50,47 @@ export class UsersService {
             not: '', 
           }
         },
+        omit: {
+          email: true,
+          password: true,
+        },
         skip: _page,
         take: pageSize
       })
     } else {
       return this.databaseService.user.findMany({
         skip: _page,
-        take: pageSize
+        take: pageSize,
+        omit: {
+          email: true,
+          password: true,
+        },
       })
     }
   }
 
   async findOne(id: number) {
-    const user = await this.databaseService.user.findUnique({
-      where: {
-        id
-      }
-    })
-    if (!user) {
-      throw new NotFoundException('id错误')
+    try {
+      const user = await this.databaseService.user.findUnique({
+        where: {
+          id
+        },
+        omit: {
+          email: true,
+          password: true,
+        },
+      })
+      return user
+    } catch (error) {
+      console.log('error--',error);
+      throw new Prisma.PrismaClientValidationError('参数错误', {
+        clientVersion: Prisma.prismaVersion.client
+      })
     }
-    return user
   }
 
   async update(id: number, updateUserDto: Prisma.UserUpdateInput) {
-    try {
+    // try {
       const res = await this.databaseService.user.update({
         where: {
           id
@@ -84,9 +98,9 @@ export class UsersService {
         data: updateUserDto
       })
       console.log("🚀 ~ UsersService ~ update ~ res:", res)
-    } catch (error) {
-      throw new Error(error.message)
-    }
+    // } catch (error) {
+    //   throw new HttpExceptionFilter()
+    // }
     // const _arr = []
     // this.users = this.users.map(item => {
     //   if (item.id===id) {
